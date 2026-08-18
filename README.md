@@ -17,7 +17,7 @@ history in memory.
 corepack enable
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm exec playwright install chromium
+pnpm --filter @chat-app/e2e exec playwright install chromium
 ```
 
 The development commands read these variables:
