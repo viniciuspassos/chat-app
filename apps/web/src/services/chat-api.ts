@@ -44,7 +44,7 @@ export async function readChatResponse(response: Response): Promise<ChatResponse
 export class FetchChatApi implements ChatApi {
   public constructor(
     private readonly apiBaseUrl: string,
-    private readonly httpRequest: HttpRequest = globalThis.fetch,
+    private readonly httpRequest: HttpRequest = globalThis.fetch.bind(globalThis),
   ) {}
 
   public async sendMessage(message: string): Promise<ChatResponse> {
