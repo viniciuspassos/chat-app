@@ -1,5 +1,6 @@
 export function normalizeChatInput(input: string): string {
-  return input.trim();
+  const normalizedInput = input.trim();
+  return normalizedInput;
 }
 
 export function getSafeChatError(error: unknown): string {
@@ -8,5 +9,6 @@ export function getSafeChatError(error: unknown): string {
 }
 
 export function scrollTranscriptToBottom(transcript: HTMLElement): void {
-  transcript.scrollTop = transcript.scrollHeight;
+  const bottomOffset = transcript.scrollHeight;
+  transcript.scrollTop = bottomOffset;
 }
