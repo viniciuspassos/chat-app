@@ -5,6 +5,7 @@ import { App } from '../src/App';
 describe('App', () => {
   it('renders the chat application shell', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Chat Application' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Chat Assistant' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Conversation' })).toBeInTheDocument();
   });
 });
