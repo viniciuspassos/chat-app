@@ -1,0 +1,16 @@
+.page {
+  align-items: center;
+  background:
+    radial-gradient(circle at 10% 15%, rgb(99 102 241 / 18%), transparent 32rem),
+    radial-gradient(circle at 90% 80%, rgb(14 165 233 / 14%), transparent 28rem), #f5f7fb;
+  display: flex;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+@media (max-width: 640px) {
+  .page {
+    align-items: stretch;
+    padding: 0;
+  }
+}
