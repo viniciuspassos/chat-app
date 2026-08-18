@@ -17,14 +17,8 @@ describe('environmentValidationSchema', () => {
   it.each([
     [{ CORS_ALLOWED_ORIGIN: 'http://localhost:5173' }, 'PORT'],
     [{ PORT: 3000 }, 'CORS_ALLOWED_ORIGIN'],
-    [
-      { CORS_ALLOWED_ORIGIN: 'not-an-origin', PORT: 3000 },
-      'CORS_ALLOWED_ORIGIN',
-    ],
-    [
-      { CORS_ALLOWED_ORIGIN: 'http://localhost:5173', PORT: 70_000 },
-      'PORT',
-    ],
+    [{ CORS_ALLOWED_ORIGIN: 'not-an-origin', PORT: 3000 }, 'CORS_ALLOWED_ORIGIN'],
+    [{ CORS_ALLOWED_ORIGIN: 'http://localhost:5173', PORT: 70_000 }, 'PORT'],
   ])('rejects invalid configuration %j', (environment, invalidKey) => {
     const validation = environmentValidationSchema.validate(environment);
 

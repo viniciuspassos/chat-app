@@ -66,9 +66,7 @@ describe('POST /chat', () => {
       .set('Access-Control-Request-Method', 'POST')
       .expect(204);
 
-    expect(allowedResponse.headers['access-control-allow-origin']).toBe(
-      'http://localhost:5173',
-    );
+    expect(allowedResponse.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     expect(disallowedResponse.headers['access-control-allow-origin']).not.toBe(
       'https://untrusted.example',
     );
@@ -100,6 +98,8 @@ describe('POST /chat rate limit', () => {
       .expect(429);
 
     expect(response.body).toMatchObject({ statusCode: 429 });
-    await request(app.getHttpServer() as Server).get('/not-found').expect(404);
+    await request(app.getHttpServer() as Server)
+      .get('/not-found')
+      .expect(404);
   });
 });
