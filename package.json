@@ -6,6 +6,10 @@
   "engines": {
     "node": ">=24 <25"
   },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
+  },
   "scripts": {
     "build": "pnpm -r --if-present build",
     "dev": "pnpm --parallel --filter @chat-app/api --filter @chat-app/web dev",
@@ -13,9 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm --filter '!@chat-app/e2e' -r --if-present test",
     "test:e2e": "pnpm --filter @chat-app/e2e test",
     "typecheck": "pnpm -r --if-present typecheck"
   }
 }
-
