@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch src/main.ts",
+    "dev": "nest start --watch",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -27,6 +27,7 @@
     "rxjs": "7.8.2"
   },
   "devDependencies": {
+    "@nestjs/cli": "11.0.24",
     "@eslint/js": "9.34.0",
     "@nestjs/testing": "11.1.6",
     "@types/express": "5.0.3",
@@ -38,7 +39,6 @@
     "prettier": "3.6.2",
     "supertest": "7.1.4",
     "ts-jest": "29.4.1",
-    "tsx": "4.20.5",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0"
   }

@@ -9,6 +9,7 @@ import { environmentValidationSchema } from './config/environment';
   imports: [
     ConfigModule.forRoot({
       cache: true,
+      envFilePath: ['../../.env', '.env'],
       isGlobal: true,
       validationSchema: environmentValidationSchema,
     }),
