@@ -1,0 +1,32 @@
+{
+  "name": "@chat-app/mcp-writer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./safe-workspace": {
+      "types": "./src/safe-workspace.ts",
+      "default": "./src/safe-workspace.ts"
+    }
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.21.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "tsx": "^4.20.6",
+    "vitest": "^4.0.15"
+  }
+}

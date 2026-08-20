@@ -1,23 +1,26 @@
 FROM node:24-alpine AS build
 
-WORKDIR /workspace
+WORKDIR /app
 RUN corepack enable
+RUN apk add --no-cache g++ linux-headers make python3
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages/contracts/package.json packages/contracts/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/mcp-search/package.json apps/mcp-search/package.json
+COPY apps/mcp-writer/package.json apps/mcp-writer/package.json
 COPY apps/web/package.json apps/web/package.json
-RUN pnpm install --frozen-lockfile
+COPY packages/contracts/package.json packages/contracts/package.json
+RUN pnpm install --filter @chat-app/web... --frozen-lockfile
 
-COPY packages/contracts packages/contracts
-COPY apps/web apps/web
-
-ARG VITE_API_BASE_URL=http://localhost:3000
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+COPY . .
 RUN pnpm --filter @chat-app/web build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM node:24-alpine
 
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /workspace/apps/web/dist /usr/share/nginx/html
+WORKDIR /app
+RUN corepack enable
+COPY --from=build /app /app
 
-EXPOSE 8080
+ENV NODE_ENV=production
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@chat-app/web", "start"]

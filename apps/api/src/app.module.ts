@@ -1,20 +1,16 @@
+import type { DynamicModule } from '@nestjs/common';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 
-import { ChatModule } from './chat/chat.module';
-import { environmentValidationSchema } from './config/environment';
+import { COPILOT_API, type CopilotApiPort } from './http/copilot-api.port';
+import { CopilotController } from './http/copilot.controller';
 
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      cache: true,
-      envFilePath: ['../../.env', '.env'],
-      isGlobal: true,
-      validationSchema: environmentValidationSchema,
-    }),
-    ThrottlerModule.forRoot([{ limit: 5, ttl: 60_000 }]),
-    ChatModule,
-  ],
-})
-export class AppModule {}
+@Module({})
+export class AppModule {
+  static register(api: CopilotApiPort): DynamicModule {
+    return {
+      module: AppModule,
+      controllers: [CopilotController],
+      providers: [{ provide: COPILOT_API, useValue: api }],
+    };
+  }
+}

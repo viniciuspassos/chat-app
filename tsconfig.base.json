@@ -8,6 +8,10 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2023"
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "sourceMap": true
   }
 }

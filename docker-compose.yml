@@ -1,21 +1,46 @@
 services:
+  redis:
+    image: redis:8-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    env_file: .env
     environment:
-      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:8080}
-      PORT: 3000
-    ports:
-      - '${API_PORT:-3000}:3000'
+      REDIS_URL: redis://redis:6379
+      WORKSPACE_ROOT: /workspace
+      ARTIFACT_ROOT: /artifacts
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - '3001'
+    volumes:
+      - .:/workspace
+      - artifacts_data:/artifacts
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    env_file: .env
+    environment:
+      API_INTERNAL_URL: http://api:3001
     depends_on:
-      - api
+      api:
+        condition: service_started
     ports:
-      - '${WEB_PORT:-8080}:8080'
+      - '3000:3000'
+
+volumes:
+  redis_data:
+  artifacts_data:

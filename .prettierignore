@@ -1,7 +1,8 @@
 coverage/
 dist/
+.next/
+apps/web/next-env.d.ts
 node_modules/
 playwright-report/
 pnpm-lock.yaml
 test-results/
-

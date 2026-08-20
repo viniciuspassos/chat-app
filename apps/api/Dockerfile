@@ -1,32 +1,27 @@
-FROM node:24-alpine AS build
+FROM node:24-bookworm-slim AS base
 
-WORKDIR /workspace
+WORKDIR /app
 RUN corepack enable
+
+FROM base AS build-tools
+
+RUN apt-get update && apt-get install --no-install-recommends --yes g++ make python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+FROM build-tools AS dependencies
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages/contracts/package.json packages/contracts/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/mcp-search/package.json apps/mcp-search/package.json
+COPY apps/mcp-writer/package.json apps/mcp-writer/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
 RUN pnpm install --frozen-lockfile
 
-COPY packages/contracts packages/contracts
+FROM dependencies AS runtime
+
 COPY apps/api apps/api
-RUN pnpm --filter @chat-app/api build
+COPY apps/mcp-search apps/mcp-search
+COPY apps/mcp-writer apps/mcp-writer
+COPY packages/contracts packages/contracts
 
-FROM node:24-alpine AS production
-
-ENV NODE_ENV=production
-WORKDIR /workspace
-RUN corepack enable
-
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/contracts/package.json packages/contracts/package.json
-COPY apps/api/package.json apps/api/package.json
-RUN pnpm install --prod --frozen-lockfile
-
-COPY --from=build /workspace/apps/api/dist apps/api/dist
-
-USER node
-WORKDIR /workspace/apps/api
-EXPOSE 3000
-
-CMD ["node", "dist/main.js"]
+CMD ["pnpm", "--filter", "@chat-app/api", "exec", "tsx", "src/main.ts"]
