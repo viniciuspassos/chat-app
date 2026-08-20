@@ -1,7 +1,11 @@
 packages:
-  - apps/*
+  - apps/api
+  - apps/web
+  - apps/mcp-search
+  - apps/mcp-writer
   - packages/*
 
 onlyBuiltDependencies:
   - '@nestjs/core'
   - esbuild
+  - re2

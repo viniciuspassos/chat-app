@@ -1,0 +1,24 @@
+{
+  "name": "@chat-app/mcp-search",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test"
+  },
+  "dependencies": {
+    "@chat-app/mcp-writer": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.21.0",
+    "re2": "^1.22.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "tsx": "^4.20.6",
+    "vitest": "^4.0.15"
+  }
+}
