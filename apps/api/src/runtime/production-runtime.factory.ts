@@ -55,6 +55,7 @@ export async function createProductionRuntime(
     startMcp('writer', 'apps/mcp-writer/src/main.ts', options.workspaceRoot),
   ]);
   const mcp = new McpToolService({ search, writer });
+  const artifacts = new FileSystemArtifactStore(options.workspaceRoot, options.artifactRoot);
   const provider = new OpenAiResponsesAdapter(
     new OpenAI({ apiKey: options.openAiApiKey }).responses as unknown as ResponsesStreamPort,
     options.model,
@@ -65,7 +66,7 @@ export async function createProductionRuntime(
       redis,
       new RedisConversationRepository(redis),
       new RedisTurnEventReader(redis),
-      new ProductionAgentRunnerFactory(provider, mcp, redis, options.agentLimits),
+      new ProductionAgentRunnerFactory(provider, mcp, redis, options.agentLimits, artifacts),
       new RedisActiveTurnLock(redis),
       new ContextSelectorService(
         new Utf8TokenCounter(),
@@ -73,7 +74,7 @@ export async function createProductionRuntime(
         options.contextTokenBudget,
         options.contextRecentExchanges,
       ),
-      new FileSystemArtifactStore(options.workspaceRoot, options.artifactRoot),
+      artifacts,
       new RedisTurnEventPublisher(redis),
       options.sessionTtlSeconds,
       options.systemPrompt,
@@ -90,6 +91,7 @@ class ProductionAgentRunnerFactory implements AgentRunnerFactoryPort {
     private readonly mcp: McpToolClientPort,
     private readonly redis: RedisStreamPort,
     private readonly limits: AgentLoopLimits,
+    private readonly artifacts: FileSystemArtifactStore,
   ) {}
   create(turnId: string): AgentLoopService {
     return new AgentLoopService(
@@ -99,6 +101,7 @@ class ProductionAgentRunnerFactory implements AgentRunnerFactoryPort {
       new McpTurnTransaction(this.mcp),
       new SystemClock(),
       this.limits,
+      this.artifacts,
     );
   }
 }

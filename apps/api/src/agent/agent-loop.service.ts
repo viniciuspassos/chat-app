@@ -1,5 +1,6 @@
 import type { CanonicalDelta, ContentBlock } from '@chat-app/contracts';
 import { BlockAssembler } from '../domain/block-assembler';
+import type { ArtifactSnapshot, ArtifactSnapshotPort } from '../runtime/artifact-snapshot.port';
 import type {
   ClockPort,
   ConversationExchange,
@@ -46,6 +47,7 @@ export class AgentLoopService {
     private readonly transaction: TurnTransactionPort,
     private readonly clock: ClockPort,
     private readonly limits: AgentLoopLimits = defaultAgentLoopLimits,
+    private readonly artifacts?: ArtifactSnapshotPort,
   ) {}
 
   async run(input: AgentTurnInput): Promise<ConversationExchange> {
@@ -177,7 +179,31 @@ export class AgentLoopService {
     blocks: readonly ContentBlock[],
   ): Promise<ConversationExchange> {
     await this.transaction.commit(input.turnId);
-    return { id: input.turnId, userMessage: input.userMessage, blocks };
+    const artifacts = await this.snapshotGeneratedFiles(input.sessionId, blocks);
+    for (const artifact of artifacts) await this.publishArtifact(artifact);
+    return {
+      id: input.turnId,
+      userMessage: input.userMessage,
+      blocks: [...blocks, ...artifacts.map(toFileBlock)],
+    };
+  }
+  private async snapshotGeneratedFiles(
+    sessionId: string,
+    blocks: readonly ContentBlock[],
+  ): Promise<ArtifactSnapshot[]> {
+    if (!this.artifacts) return [];
+    const paths = completedWriterPaths(blocks);
+    const snapshots: ArtifactSnapshot[] = [];
+    for (const path of paths) snapshots.push(await this.artifacts.snapshot(sessionId, path));
+    return snapshots;
+  }
+  private async publishArtifact(artifact: ArtifactSnapshot): Promise<void> {
+    await this.sink.publish({
+      type: 'file',
+      artifactId: artifact.id,
+      path: artifact.path,
+      downloadUrl: artifact.downloadUrl,
+    });
   }
   private assertBeforeDeadline(deadline: number): void {
     if (this.clock.now() >= deadline) throw new Error('Turn timed out');
@@ -210,6 +236,40 @@ function toolResultBlock(tool: ToolUseBlock, result: McpToolResult): ContentBloc
     toolUseId: tool.id,
     content: result.content,
     isError: result.isError,
+  };
+}
+function completedWriterPaths(blocks: readonly ContentBlock[]): string[] {
+  const results = new Map(
+    blocks.filter((block) => block.type === 'tool_result').map((block) => [block.toolUseId, block]),
+  );
+  const paths = new Set<string>();
+  for (const block of blocks) {
+    if (block.type !== 'tool_use') continue;
+    if (!isCompletedWriterFile(block, results.get(block.id))) continue;
+    paths.add(block.input.path);
+  }
+  return [...paths];
+}
+function isCompletedWriterFile(
+  block: ToolUseBlock,
+  result: ContentBlock | undefined,
+): block is ToolUseBlock & { readonly input: { readonly path: string } } {
+  return (
+    block.server === 'writer' &&
+    (block.name === 'write_file' || block.name === 'commit_write') &&
+    typeof block.input.path === 'string' &&
+    result?.type === 'tool_result' &&
+    !result.isError
+  );
+}
+function toFileBlock(artifact: ArtifactSnapshot): ContentBlock {
+  return {
+    type: 'file',
+    id: artifact.id,
+    path: artifact.path,
+    name: artifact.name,
+    mediaType: artifact.mediaType,
+    downloadUrl: artifact.downloadUrl,
   };
 }
 function toToolMessage(block: ContentBlock): LlmMessage {

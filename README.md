@@ -56,14 +56,16 @@ and successful changes can be downloaded as a snapshot.
 
 ### Context-selection strategy
 
-Each model turn includes the system prompt and the most recent four conversation
-exchanges, so the current request and its immediate tool activity remain verbatim.
+Each model turn includes the system prompt and a fitting persisted summary. It
+then considers up to the most recent four exchanges from newest to oldest,
+keeping each exchange atomically while it fits the remaining budget. Older
+exchanges are therefore dropped first; if the newest exchange alone is too
+large, it is omitted whole and the valid system/summary context is used instead.
 Older exchanges are compressed into a persisted summary. When a valid earlier
 summary exists, only the exchanges added since that summary are summarized again.
-The selector counts text and function-call arguments against `CONTEXT_TOKEN_BUDGET`
-before sending a request. It reuses a prior summary if summarization fails, but
-fails explicitly if the required recent context or the resulting summary exceeds
-the budget. This preserves fresh detail while preventing unbounded prompt growth.
+The selector counts rendered message text, the summary prefix, and function-call
+arguments against `CONTEXT_TOKEN_BUDGET` before sending a request, so the final
+context never exceeds the budget.
 
 ### Why the BFF keeps NestJS and the LLM key off the browser
 

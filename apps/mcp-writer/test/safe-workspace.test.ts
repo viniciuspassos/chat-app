@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -35,9 +35,39 @@ describe('SafeWorkspace', () => {
     const { workspace } = await createWorkspace();
 
     await expect(workspace.readText('../secret.txt')).rejects.toBeInstanceOf(WorkspaceAccessError);
+    await expect(workspace.readText('/tmp/secret.txt')).rejects.toBeInstanceOf(
+      WorkspaceAccessError,
+    );
+    await expect(workspace.readText('nested/../secret.txt')).rejects.toBeInstanceOf(
+      WorkspaceAccessError,
+    );
     await expect(workspace.writeText('turn-2', '.env', 'secret')).rejects.toBeInstanceOf(
       WorkspaceAccessError,
     );
+  });
+
+  it('rejects forbidden directories for reads and writes', async () => {
+    const { workspace } = await createWorkspace();
+
+    await expect(workspace.readText('.git/config')).rejects.toBeInstanceOf(WorkspaceAccessError);
+    await expect(
+      workspace.writeText('turn-2', 'node_modules/pkg/index.js', 'x'),
+    ).rejects.toBeInstanceOf(WorkspaceAccessError);
+  });
+
+  it('rejects symlink escapes for reads and writes', async () => {
+    const { root, workspace } = await createWorkspace();
+    const outside = await mkdtemp(join(tmpdir(), 'chat-app-outside-'));
+    temporaryRoots.push(outside);
+    await symlink(outside, join(root, 'linked'));
+    await writeFile(join(outside, 'secret.txt'), 'secret');
+
+    await expect(workspace.readText('linked/secret.txt')).rejects.toBeInstanceOf(
+      WorkspaceAccessError,
+    );
+    await expect(
+      workspace.writeText('turn-2', 'linked/secret.txt', 'secret'),
+    ).rejects.toBeInstanceOf(WorkspaceAccessError);
   });
 
   it('publishes an ordered staged write only after commit', async () => {

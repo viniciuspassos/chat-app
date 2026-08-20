@@ -23,4 +23,16 @@ describe('route response helpers', () => {
       'id: 2\nevent: tool\ndata: {"type":"tool","toolUseId":"a","name":"grep","server":"search","status":"done"}\n\n',
     );
   });
+
+  it('preserves SSE ordering through done and error terminal events', async () => {
+    const response = sseResponse(
+      new Response(
+        'id: 1\nevent: text\ndata: {"blockIndex":0,"delta":"Working"}\n\nid: 2\nevent: done\ndata: {"turnId":"cbb6aa43-5170-4fba-b1f6-1cd26c7f5069","exchangeIndex":0}\n\nid: 3\nevent: error\ndata: {"code":"turn_failed","message":"write failed"}\n\n',
+      ),
+    );
+
+    await expect(response.text()).resolves.toBe(
+      'id: 1\nevent: text\ndata: {"type":"text","blockIndex":0,"delta":"Working"}\n\nid: 2\nevent: done\ndata: {"type":"done","turnId":"cbb6aa43-5170-4fba-b1f6-1cd26c7f5069","exchangeIndex":0}\n\nid: 3\nevent: error\ndata: {"type":"error","code":"turn_failed","message":"write failed"}\n\n',
+    );
+  });
 });

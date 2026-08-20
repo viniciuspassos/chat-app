@@ -16,7 +16,7 @@ type PendingBlock = PendingTextBlock | PendingToolBlock;
 
 export class BlockAssembler {
   private readonly pending = new Map<number, PendingBlock>();
-  private readonly completed: ContentBlock[] = [];
+  private readonly completed = new Map<number, ContentBlock>();
 
   accept(delta: CanonicalDelta): ContentBlock | undefined {
     if (delta.type === 'content_block_start') return this.start(delta);
@@ -27,7 +27,9 @@ export class BlockAssembler {
   }
 
   blocks(): readonly ContentBlock[] {
-    return this.completed;
+    return [...this.completed.entries()]
+      .sort(([firstIndex], [secondIndex]) => firstIndex - secondIndex)
+      .map(([, block]) => block);
   }
 
   private start(delta: Extract<CanonicalDelta, { type: 'content_block_start' }>): undefined {
@@ -76,7 +78,7 @@ export class BlockAssembler {
       pending.kind === 'text'
         ? { type: 'text' as const, text: pending.text }
         : this.toToolUse(pending);
-    this.completed.push(block);
+    this.completed.set(index, block);
     return block;
   }
 

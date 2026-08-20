@@ -14,6 +14,8 @@ export interface McpTransportPort {
   ): Promise<{ readonly content: string; readonly isError?: boolean }>;
 }
 export class McpToolService implements McpToolClientPort {
+  private readonly discoveredServers = new Map<string, 'search' | 'writer'>();
+
   public constructor(
     private readonly transports: Readonly<Record<'search' | 'writer', McpTransportPort>>,
   ) {}
@@ -24,11 +26,15 @@ export class McpToolService implements McpToolClientPort {
     ]);
     const tools = [...search, ...writer].filter((tool) => !transactionToolNames.has(tool.name));
     this.assertUniqueNames(tools);
+    this.rememberServers(search, 'search');
+    this.rememberServers(writer, 'writer');
     return tools;
   }
   async call(tool: McpToolCall): Promise<McpToolResult> {
+    const server = this.serverFor(tool.name);
+    if (!server) return { content: `Unknown MCP tool: ${tool.name}`, isError: true };
     try {
-      const response = await this.transports[tool.server].call(tool.name, tool.input);
+      const response = await this.transports[server].call(tool.name, tool.input);
       return { content: response.content, isError: response.isError === true };
     } catch (error) {
       return {
@@ -36,6 +42,13 @@ export class McpToolService implements McpToolClientPort {
         isError: true,
       };
     }
+  }
+  private rememberServers(tools: readonly LlmToolDefinition[], server: 'search' | 'writer'): void {
+    for (const tool of tools) this.discoveredServers.set(tool.name, server);
+  }
+  private serverFor(name: string): 'search' | 'writer' | undefined {
+    if (transactionToolNames.has(name)) return 'writer';
+    return this.discoveredServers.get(name);
   }
   private assertUniqueNames(tools: readonly LlmToolDefinition[]): void {
     const names = new Set<string>();
