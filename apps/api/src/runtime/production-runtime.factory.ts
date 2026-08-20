@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { createClient } from 'redis';
+import { resolve } from 'node:path';
 import { AgentLoopService, type AgentLoopLimits } from '../agent/agent-loop.service';
 import { CompactSummaryPort } from '../context/compact-summary.port';
 import { ContextSelectorService } from '../context/context-selector.service';
@@ -51,8 +52,8 @@ export async function createProductionRuntime(
   const redis = createClient({ url: options.redisUrl }) as unknown as RedisRuntimePort;
   await redis.connect();
   const [search, writer] = await Promise.all([
-    startMcp('search', 'apps/mcp-search/src/main.ts', options.workspaceRoot),
-    startMcp('writer', 'apps/mcp-writer/src/main.ts', options.workspaceRoot),
+    startMcp('search', mcpEntrypoint('search'), options.workspaceRoot),
+    startMcp('writer', mcpEntrypoint('writer'), options.workspaceRoot),
   ]);
   const mcp = new McpToolService({ search, writer });
   const artifacts = new FileSystemArtifactStore(options.workspaceRoot, options.artifactRoot);
@@ -140,6 +141,9 @@ function startMcp(
     args: ['--import', 'tsx', entrypoint],
     environment: { ...environmentStrings(), WORKSPACE_ROOT: workspaceRoot },
   });
+}
+export function mcpEntrypoint(name: 'search' | 'writer'): string {
+  return resolve(__dirname, `../../../mcp-${name}/src/main.ts`);
 }
 function environmentStrings(): Record<string, string> {
   return Object.fromEntries(
