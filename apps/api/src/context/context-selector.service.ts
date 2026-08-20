@@ -22,46 +22,44 @@ export class ContextSelectorService {
     systemPrompt: string,
     previousSummary?: PersistedContextSummary,
   ): Promise<ContextSelection> {
-    const recent = exchanges.slice(-this.recentExchanges);
-    const older = exchanges.slice(0, Math.max(0, exchanges.length - recent.length));
-    const messages = [...systemMessage(systemPrompt), ...toMessages(recent)];
-    const plainTokens = messages.reduce(
-      (sum, message) => sum + messageTokens(message, this.counter),
-      0,
+    const system = systemMessage(systemPrompt);
+    const systemTokens = messagesTokens(system, this.counter);
+    if (systemTokens > this.limit)
+      throw new Error(`System prompt uses ${systemTokens} tokens; limit is ${this.limit}`);
+
+    const summary = await this.selectSummary(exchanges, previousSummary, systemTokens);
+    const prefix = [...system, ...summaryMessage(summary)];
+    const recent = selectRecentExchanges(
+      exchanges,
+      this.recentExchanges,
+      this.limit - messagesTokens(prefix, this.counter),
+      this.counter,
     );
-    if (plainTokens > this.limit)
-      throw new Error(`Required context uses ${plainTokens} tokens; limit is ${this.limit}`);
-    if (older.length === 0) return { messages };
+    return { messages: [...prefix, ...toMessages(recent)], ...(summary ? { summary } : {}) };
+  }
+  private async selectSummary(
+    exchanges: readonly ConversationExchange[],
+    previousSummary: PersistedContextSummary | undefined,
+    systemTokens: number,
+  ): Promise<PersistedContextSummary | undefined> {
+    const older = exchanges.slice(0, Math.max(0, exchanges.length - this.recentExchanges));
     const prior = validPreviousSummary(previousSummary, older);
     const newExchanges = prior ? older.slice(prior.index + 1) : older;
-    const summary = await this.summarizeOlder(newExchanges, prior, previousSummary);
-    const total = plainTokens + this.counter.count(summary.text);
-    if (total > this.limit)
-      throw new Error(`Context summary uses ${total} tokens; limit is ${this.limit}`);
-    return {
-      messages: [
-        ...systemMessage(systemPrompt),
-        { role: 'assistant', content: `Previous conversation summary:\n${summary.text}` },
-        ...toMessages(recent),
-      ],
-      summary,
-    };
-  }
-  private async summarizeOlder(
-    exchanges: readonly ConversationExchange[],
-    prior: { readonly index: number; readonly text: string } | undefined,
-    previousSummary: PersistedContextSummary | undefined,
-  ): Promise<PersistedContextSummary> {
-    if (prior && exchanges.length === 0 && previousSummary) return previousSummary;
+    if (newExchanges.length === 0)
+      return fittingSummary(previousSummary, systemTokens, this.counter, this.limit);
     try {
-      const text = await this.summary.summarize(exchanges, prior?.text);
-      if (prior && previousSummary && text === previousSummary.text) return previousSummary;
-      return {
-        text,
-        throughExchangeId: exchanges.at(-1)?.id ?? previousSummary?.throughExchangeId ?? '',
+      const summary = {
+        text: await this.summary.summarize(newExchanges, prior?.text),
+        throughExchangeId: newExchanges.at(-1)?.id ?? previousSummary?.throughExchangeId ?? '',
       };
+      if (prior && previousSummary && summary.text === previousSummary.text) return previousSummary;
+      return (
+        fittingSummary(summary, systemTokens, this.counter, this.limit) ??
+        fittingSummary(previousSummary, systemTokens, this.counter, this.limit)
+      );
     } catch (error) {
-      if (previousSummary) return previousSummary;
+      const fallback = fittingSummary(previousSummary, systemTokens, this.counter, this.limit);
+      if (fallback) return fallback;
       throw error;
     }
   }
@@ -71,6 +69,43 @@ function messageTokens(message: LlmMessage, counter: TokenCounterPort): number {
     counter.count(message.content) +
     counter.count('functionCall' in message ? message.functionCall.arguments : '')
   );
+}
+function messagesTokens(messages: readonly LlmMessage[], counter: TokenCounterPort): number {
+  return messages.reduce((sum, message) => sum + messageTokens(message, counter), 0);
+}
+function summaryMessage(summary: PersistedContextSummary | undefined): LlmMessage[] {
+  return summary
+    ? [{ role: 'assistant', content: `Previous conversation summary:\n${summary.text}` }]
+    : [];
+}
+function summaryTokens(summary: PersistedContextSummary, counter: TokenCounterPort): number {
+  return messagesTokens(summaryMessage(summary), counter);
+}
+function fittingSummary(
+  summary: PersistedContextSummary | undefined,
+  systemTokens: number,
+  counter: TokenCounterPort,
+  limit: number,
+): PersistedContextSummary | undefined {
+  if (!summary || summaryTokens(summary, counter) + systemTokens > limit) return undefined;
+  return summary;
+}
+function selectRecentExchanges(
+  exchanges: readonly ConversationExchange[],
+  maximum: number,
+  budget: number,
+  counter: TokenCounterPort,
+): readonly ConversationExchange[] {
+  if (maximum <= 0) return [];
+  const selected: ConversationExchange[] = [];
+  for (const exchange of exchanges.slice(-maximum).toReversed()) {
+    const tokens = messagesTokens(toMessages([exchange]), counter);
+    // An oversized newest exchange is omitted whole; older exchanges are also omitted to keep a contiguous suffix.
+    if (tokens > budget) break;
+    selected.unshift(exchange);
+    budget -= tokens;
+  }
+  return selected;
 }
 function toMessages(exchanges: readonly ConversationExchange[]): LlmMessage[] {
   return exchanges.flatMap((exchange) => [
