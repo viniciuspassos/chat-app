@@ -52,7 +52,8 @@ export class ContextSelectorService {
         text: await this.summary.summarize(newExchanges, prior?.text),
         throughExchangeId: newExchanges.at(-1)?.id ?? previousSummary?.throughExchangeId ?? '',
       };
-      if (prior && previousSummary && summary.text === previousSummary.text) return previousSummary;
+      if (prior && previousSummary && summary.text === previousSummary.text)
+        return fittingSummary(previousSummary, systemTokens, this.counter, this.limit);
       return (
         fittingSummary(summary, systemTokens, this.counter, this.limit) ??
         fittingSummary(previousSummary, systemTokens, this.counter, this.limit)

@@ -37,24 +37,24 @@ function selectedExchangeIds(messages: readonly { readonly content: string }[]):
 }
 
 describe('ContextSelectorService', () => {
-  it('omits an oversized latest tool exchange without splitting it', async () => {
+  it('counts tool call arguments and results when omitting an oversized latest exchange', async () => {
     const selector = new ContextSelectorService(
       new CharacterCounter(),
       new FixedSummaryPort(''),
-      1,
+      2,
     );
 
     const context = await selector.select(
       [
         {
           id: 'turn',
-          userMessage: 'x',
+          userMessage: '',
           blocks: [
             {
               type: 'tool_use',
               id: 'call',
               name: 'write_file',
-              input: { content: 'large generated source' },
+              input: {},
               server: 'writer',
             },
             { type: 'tool_result', toolUseId: 'call', content: 'result', isError: false },
@@ -185,6 +185,26 @@ describe('ContextSelectorService', () => {
     );
 
     expect(context.summary).toEqual(previous);
+  });
+
+  it('omits a stale summary that cannot fit after a no-op refresh', async () => {
+    const previous = { throughExchangeId: 'turn-0', text: 's'.repeat(100) };
+    const selector = new ContextSelectorService(
+      new CharacterCounter(),
+      new FixedSummaryPort(previous.text),
+      10,
+      1,
+    );
+
+    const context = await selector.select(
+      [sizedExchange('0', 1), sizedExchange('1', 1), sizedExchange('2', 1)],
+      '',
+      previous,
+    );
+
+    expect(context.summary).toBeUndefined();
+    expect(selectedExchangeIds(context.messages)).toEqual(['2']);
+    expect(context.messages.reduce((total, message) => total + message.content.length, 0)).toBe(1);
   });
 });
 
