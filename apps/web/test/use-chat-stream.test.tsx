@@ -6,11 +6,11 @@ describe('chat reducer and event parser', () => {
     const started = chatReducer(initialChatState, {
       type: 'turn_started',
       turnId: 'turn',
-      text: 'crie rota',
+      text: 'create route',
     });
     const withText = chatReducer(started, {
       type: 'event',
-      event: { type: 'text', blockIndex: 0, delta: 'Pronto' },
+      event: { type: 'text', blockIndex: 0, delta: 'Done' },
       eventId: '1',
     });
     const withTool = chatReducer(withText, {
@@ -32,15 +32,15 @@ describe('chat reducer and event parser', () => {
         downloadUrl: '/api/files/cbb6aa43-5170-4fba-b1f6-1cd26c7f5069',
       },
     });
-    expect(withFile.messages[1]?.text).toBe('Pronto');
+    expect(withFile.messages[1]?.text).toBe('Done');
     expect(withFile.messages[1]?.tools[0]?.name).toBe('write_file');
     expect(withFile.messages[1]?.files[0]?.path).toBe('src/a.ts');
   });
   it('accepts named SSE payloads and drops malformed data', () => {
-    expect(parseChatEvent({ event: 'text', data: '{"blockIndex":0,"delta":"oi"}' })).toEqual({
+    expect(parseChatEvent({ event: 'text', data: '{"blockIndex":0,"delta":"hello"}' })).toEqual({
       type: 'text',
       blockIndex: 0,
-      delta: 'oi',
+      delta: 'hello',
     });
     expect(parseChatEvent({ event: 'text', data: 'not-json' })).toBeNull();
   });

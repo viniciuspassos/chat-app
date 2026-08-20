@@ -10,8 +10,8 @@ export default function HomePage(): React.JSX.Element {
     <main className="shell">
       <header>
         <p className="eyebrow">CODEBASE COPILOT</p>
-        <h1>Construa com contexto.</h1>
-        <p>Descreva a mudança e acompanhe o trabalho no seu workspace.</p>
+        <h1>Build with context.</h1>
+        <p>Describe the change and follow the work in your workspace.</p>
       </header>
       <ChatTranscript messages={state.messages} isStreaming={Boolean(state.activeTurnId)} />
       {state.error && (
@@ -19,7 +19,7 @@ export default function HomePage(): React.JSX.Element {
           <p>{state.error}</p>
           {state.retryMessage && (
             <button type="button" className="retry-button" onClick={() => void retryLastMessage()}>
-              Tentar novamente
+              Try again
             </button>
           )}
         </div>

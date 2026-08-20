@@ -3,14 +3,14 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Codebase Copilot',
-  description: 'Copiloto para sua base de código',
+  description: 'A copilot for your codebase',
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.ReactNode {
   return (
-    <html lang="pt-BR">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

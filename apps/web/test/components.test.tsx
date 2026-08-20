@@ -7,10 +7,10 @@ describe('chat components', () => {
   it('sends trimmed composer input and clears the field', () => {
     const onSend = vi.fn().mockResolvedValue(undefined);
     render(<ChatBox disabled={false} onSend={onSend} />);
-    fireEvent.change(screen.getByLabelText('Mensagem'), { target: { value: '  criar teste  ' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Enviar' }).closest('form')!);
-    expect(onSend).toHaveBeenCalledWith('criar teste');
-    expect(screen.getByLabelText('Mensagem')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: '  create test  ' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Send' }).closest('form')!);
+    expect(onSend).toHaveBeenCalledWith('create test');
+    expect(screen.getByLabelText('Message')).toHaveValue('');
   });
 
   it('renders GFM downloads and not raw HTML', () => {

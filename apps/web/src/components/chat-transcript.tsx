@@ -47,7 +47,7 @@ export function ChatTranscript({ messages, isStreaming }: ChatTranscriptProps): 
             </p>
           )}
           {message.role === 'assistant' && isStreaming && message === messages.at(-1) && (
-            <span className="cursor" aria-label="Respondendo" />
+            <span className="cursor" aria-label="Responding" />
           )}
         </article>
       ))}

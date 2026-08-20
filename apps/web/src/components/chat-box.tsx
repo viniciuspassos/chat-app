@@ -27,19 +27,19 @@ export function ChatBox({ disabled, onSend, retryMessage }: ChatBoxProps): React
   return (
     <form className="chat-box" onSubmit={submit}>
       <label className="sr-only" htmlFor="message">
-        Mensagem
+        Message
       </label>
       <textarea
         id="message"
         ref={inputRef}
         value={message}
         onChange={(event) => setMessage(event.target.value)}
-        placeholder="Peça uma alteração no código…"
+        placeholder="Ask for a code change…"
         rows={3}
         disabled={disabled}
       />
       <button type="submit" disabled={disabled || !message.trim()}>
-        Enviar
+        Send
       </button>
     </form>
   );

@@ -218,19 +218,19 @@ async function openTurn(turnId: string, message: string): Promise<Response> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ turnId, message }),
   });
-  if (!response.ok) throw await responseError(response, 'Não foi possível enviar a mensagem.');
+  if (!response.ok) throw await responseError(response, 'Unable to send the message.');
   return response;
 }
 async function reconnectTurn(turnId: string, lastEventId?: string): Promise<Response> {
   const response = await fetch(`/api/chat/turns/${encodeURIComponent(turnId)}`, {
     headers: lastEventId ? { 'last-event-id': lastEventId } : undefined,
   });
-  if (!response.ok) throw await responseError(response, 'A conexão foi interrompida.');
+  if (!response.ok) throw await responseError(response, 'The connection was interrupted.');
   return response;
 }
 async function bootstrapSession(): Promise<BrowserHistory> {
   const response = await fetch('/api/session');
-  if (!response.ok) throw await responseError(response, 'Não foi possível iniciar a sessão.');
+  if (!response.ok) throw await responseError(response, 'Unable to start the session.');
   const payload: unknown = await response.json();
   return typeof payload === 'object' &&
     payload !== null &&
@@ -309,13 +309,13 @@ export function useChatStream(): {
             dispatch({ type: 'event', event, eventId: sseEvent.id });
           });
           if (finished) return;
-          throw new Error('A conexão foi interrompida antes do fim da resposta.');
+          throw new Error('The connection was interrupted before the response completed.');
         } catch (error: unknown) {
           reconnectAttempt += 1;
           if (reconnectAttempt > 2)
             dispatch({
               type: 'turn_error',
-              message: error instanceof Error ? error.message : 'A resposta falhou.',
+              message: error instanceof Error ? error.message : 'The response failed.',
             });
         }
       }
@@ -347,7 +347,7 @@ export function useChatStream(): {
         if (active)
           dispatch({
             type: 'session_error',
-            message: error instanceof Error ? error.message : 'Falha na sessão.',
+            message: error instanceof Error ? error.message : 'The session failed.',
           });
       });
     return () => {
